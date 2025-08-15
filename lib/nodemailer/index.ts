@@ -1,6 +1,7 @@
 "use server"
 
 import { EmailContent, EmailProductInfo, NotificationType } from '@/types';
+import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 
 const Notification = {
@@ -80,28 +81,71 @@ export async function generateEmailBody(
   return { subject, body };
 }
 
-const transporter = nodemailer.createTransport({
-  pool: true,
-  service: 'hotmail',
-  port: 2525,
-  auth: {
-    user: 'javascriptmastery@outlook.com',
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  maxConnections: 1
-})
+
+
+const oAuth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "https://developers.google.com/oauthplayground"
+);
+
+oAuth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
 
 export const sendEmail = async (emailContent: EmailContent, sendTo: string[]) => {
-  const mailOptions = {
-    from: 'javascriptmastery@outlook.com',
-    to: sendTo,
-    html: emailContent.body,
-    subject: emailContent.subject,
-  }
+  try {
+    const accessToken = await oAuth2Client.getAccessToken();
 
-  transporter.sendMail(mailOptions, (error: any, info: any) => {
-    if(error) return console.log(error);
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        type: "OAuth2",
+        user: process.env.EMAIL_USER,
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        accessToken: accessToken.token || "",
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: sendTo,
+      subject: emailContent.subject,
+      html: emailContent.body,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+  } catch (err) {
+    console.error("Email send failed:", err);
+  }
+};
+
+
+// const transporter = nodemailer.createTransport({
+//   pool: true,
+//   service: 'hotmail',
+//   port: 2525,
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+//   maxConnections: 1
+// })
+
+// export const sendEmail = async (emailContent: EmailContent, sendTo: string[]) => {
+//   const mailOptions = {
+//     from: process.env.EMAIL_USER,
+//     to: sendTo,
+//     html: emailContent.body,
+//     subject: emailContent.subject,
+//   }
+
+//   transporter.sendMail(mailOptions, (error: any, info: any) => {
+//     if(error) return console.log(error);
     
-    console.log('Email sent: ', info);
-  })
-}
+//     console.log('Email sent: ', info);
+//   })
+// }
