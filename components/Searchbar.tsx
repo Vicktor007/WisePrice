@@ -42,7 +42,7 @@ const Searchbar = () => {
       const product = await scrapeAndStoreProduct(searchPrompt);
 
       // Navigate to the product page (spinner stays until page loads)
-      router.push(`/products/${product._id}`);
+      router.push(`/products/${product}`);
     } catch (error) {
       console.error(error);
       setIsLoading(false); // In case navigation fails

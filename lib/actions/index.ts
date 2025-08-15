@@ -29,6 +29,7 @@ export async function scrapeAndStoreProduct(productUrl: string) {
       ]
 
       product = {
+        ...existingProduct.toObject(),
         ...scrapedProduct,
         priceHistory: updatedPriceHistory,
         lowestPrice: getLowestPrice(updatedPriceHistory),
@@ -43,7 +44,8 @@ export async function scrapeAndStoreProduct(productUrl: string) {
       { upsert: true, new: true }
     );
     revalidatePath(`/products/${newProduct._id}`);
-    return newProduct._id;
+    return JSON.parse(JSON.stringify(newProduct._id));
+
     
   } catch (error: any) {
     throw new Error(`Failed to create/update product: ${error.message}`)
@@ -58,7 +60,8 @@ export async function getProductById(productId: string) {
 
     if(!product) return null;
 
-    return product;
+    return JSON.parse(JSON.stringify(product));
+
   } catch (error) {
     console.log(error);
   }
@@ -70,7 +73,8 @@ export async function getAllProducts() {
 
     const products = await Product.find();
 
-    return products;
+    return JSON.parse(JSON.stringify(products));
+
   } catch (error) {
     console.log(error);
   }
@@ -88,7 +92,8 @@ export async function getSimilarProducts(productId: string) {
       _id: { $ne: productId },
     }).limit(3);
 
-    return similarProducts;
+    return JSON.parse(JSON.stringify(similarProducts));
+
   } catch (error) {
     console.log(error);
   }
